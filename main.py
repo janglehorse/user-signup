@@ -16,6 +16,8 @@
 #
 import webapp2
 
+
+
 class MainHandler(webapp2.RequestHandler):
 
     def write_form(self, username_error="", pword_error="", email_error=""):
@@ -41,7 +43,7 @@ class MainHandler(webapp2.RequestHandler):
             Verify Password:
             </label>
             <br>
-            <input type="text" name="password_verify"/>
+            <input type="text" name="password2"/>
             <div style="color: red">{}</div>
             <br>
             <lable>
@@ -62,20 +64,72 @@ class MainHandler(webapp2.RequestHandler):
         content = self.write_form()
         self.response.write(content)
 
+    #TODO:
+    #write valid_username:
+    
+
+    #TODO:
+    #write valid_password:
+
+    #TODO:
+    #write valide_email:
+
+    def validate(self, username, password, password2, email=""):
+        error_list = []
+        if not username:
+            username_error = "Pleaase enter a valid username."
+            error_list.append(username_error)
+        if password and password2:
+            if not password == password2:
+                pword_error = "Passwords do not match."
+                if error_list:
+                    error_list.append(pword_error)
+                else:
+                    error_list.append("")
+                    error_list.append(pword_error)
+        if not password or not password2:
+            pword_error = "Please verify password."
+            if error_list:
+                error_list.append(pword_error)
+            else:
+                error_list.append("")
+                error_list.append(pword_error)
+        if email:
+            if not valid_email:
+                email_error = "Please enter valid email."
+                if error_list:
+                    error_list.append(email_error)
+                else:
+                    error_list = ["" for i in range(2)]
+                    error_list.append(email_error)
+
+        return error_list
+
+
     def post(self):
 
         username = self.request.get("username")
         password = self.request.get("password")
+        password2 = self.request.get("password2")
 
-        if username and password:
-            self.response.write("Welcome, " + username + "!")
-        if not username:
-            content = self.write_form("Please enter a valid username.")
+
+        #TODO:
+        #write valdiation function that returns list of error messages for write_form():
+        #error_list = validate(username, password, password2, email)
+        #if error_list:
+        #    content = self.write_form(error_list)
+        #else:
+        #    redirect to success page
+        error_list = self.validate(username, password, password2)
+
+        if error_list:
+            content = self.write_form(*error_list)
             self.response.write(content)
-        #error: find way to select errors without duplicating form. 
-        #if not password:
-        #     content = self.write_form("", "Please enter a valid password.")
-        #     self.response.write(content)
+        else:
+            content = "Woohoo! That worked!"
+            self.response.write(content)
+
+
 
 
 app = webapp2.WSGIApplication([
