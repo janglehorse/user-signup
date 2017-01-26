@@ -21,7 +21,7 @@ import re
 
 class MainHandler(webapp2.RequestHandler):
 
-    def write_form(self, username_error="", pword_error="", email_error=""):
+    def write_form(self, username_error="", pword_error="", verify_error="", email_error=""):
 
         header = "<h1>User Signup</h1>"
 
@@ -39,6 +39,7 @@ class MainHandler(webapp2.RequestHandler):
             </lable>
             <br>
             <input type="text" name="password"/>
+            <div style="color: red">{}</div>
             <br>
             <lable>
             Verify Password:
@@ -56,7 +57,7 @@ class MainHandler(webapp2.RequestHandler):
             <br>
             <input type="submit" value="submit">
         </form>
-        """.format(username_error, pword_error, email_error)
+        """.format(username_error, pword_error, verify_error, email_error)
 
         return header + form
 
@@ -94,16 +95,26 @@ class MainHandler(webapp2.RequestHandler):
 
     #TODO:
     #wite getPasswordError:
-    def getPasswordError(self, password, password2):
+    def getPasswordError(self, password):
         if not self.valid_password(password) or not password:
             pword_error = "Please enter valid password"
         else:
-            if not password == password2:
-                pword_error = "Passwords do not match"
-        if not password2:
-            pword_error = "Please verify password"
-        if self.valid_password(password) and password == password2:
             pword_error = None
+
+        return pword_error
+
+    #TODO:
+    #write getVerifyError:
+    def getVerifyError(self, password, password2):
+        if password2:
+            if not self.valid_password(password2):
+                pword_error = "Verification is not valid"
+            if password == password2:
+                    pword_error = "Passwords do not match"
+            if self.valid_password(password) and password == password2:
+                pword_error = None
+        else:
+            pword_error = "Please verify password"
 
         return pword_error
 
@@ -121,10 +132,11 @@ class MainHandler(webapp2.RequestHandler):
         return email_error
 
     def error_gen(self, username, password, password2, email=""):
-        error_list = ["", "", ""]
+        error_list = ["", "", "", ""]
 
         username_error = self.getUsernameError(username)
-        pword_error = self.getPasswordError(password, password2)
+        pword_error = self.getPasswordError(password)
+        verify_error = self.getVerifyError(password, password2)
         email_error = self.getEmailError(email)
 
         if username_error:
@@ -133,10 +145,13 @@ class MainHandler(webapp2.RequestHandler):
         if pword_error:
             error_list.insert(1, pword_error)
             error_list.pop(2)
-        if email_error:
-            error_list.insert(2, email_error)
+        if verify_error:
+            error_list.insert(2, verify_error)
             error_list.pop(3)
-        if error_list == ["", "", ""]:
+        if email_error:
+            error_list.insert(3, email_error)
+            error_list.pop(4)
+        if error_list == ["", "", "", ""]:
             return None
         else:
             return error_list
