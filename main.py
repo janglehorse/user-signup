@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 import webapp2
+import re
 
 
 
@@ -60,50 +61,86 @@ class MainHandler(webapp2.RequestHandler):
         return header + form
 
     def get(self):
-
         content = self.write_form()
         self.response.write(content)
 
     #TODO:
     #write valid_username:
-    
+    def valid_username(self, username):
+        user_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+        return user_RE.match(username)
 
     #TODO:
     #write valid_password:
+    def valid_password(self, password):
+        user_PW = re.compile(r"^.{3,20}$")
+        return user_PW.match(password)
 
     #TODO:
     #write valide_email:
+    def valid_email(self, email):
+        user_EM = re.compile(r"^[\S]+@[\S]+.[\S]+$")
+        return user_EM.match(email)
 
-    def validate(self, username, password, password2, email=""):
-        error_list = []
-        if not username:
-            username_error = "Pleaase enter a valid username."
-            error_list.append(username_error)
-        if password and password2:
+    #TODO:
+    #write getUsernameError:
+    def getUsernameError(self, username):
+        if not self.valid_username(username):
+            username_error = "Please enter valid username"
+        else:
+            username_error = None
+
+        return username_error
+
+    #TODO:
+    #wite getPasswordError:
+    def getPasswordError(self, password, password2):
+        if not self.valid_password(password) or not password:
+            pword_error = "Please enter valid password"
+        else:
             if not password == password2:
-                pword_error = "Passwords do not match."
-                if error_list:
-                    error_list.append(pword_error)
-                else:
-                    error_list.append("")
-                    error_list.append(pword_error)
-        if not password or not password2:
-            pword_error = "Please verify password."
-            if error_list:
-                error_list.append(pword_error)
-            else:
-                error_list.append("")
-                error_list.append(pword_error)
-        if email:
-            if not valid_email:
-                email_error = "Please enter valid email."
-                if error_list:
-                    error_list.append(email_error)
-                else:
-                    error_list = ["" for i in range(2)]
-                    error_list.append(email_error)
+                pword_error = "Passwords do not match"
+        if not password2:
+            pword_error = "Please verify password"
+        if self.valid_password(password) and password == password2:
+            pword_error = None
 
-        return error_list
+        return pword_error
+
+    #TODO:
+    #write getEmailError:
+    def getEmailError(self, email):
+        if email:
+            if not self.valid_email(email):
+                email_error = "Please enter valid email"
+            else:
+                email_error = None
+        else:
+            email_error = None
+
+        return email_error
+
+    def error_gen(self, username, password, password2, email=""):
+        error_list = ["", "", ""]
+
+        username_error = self.getUsernameError(username)
+        pword_error = self.getPasswordError(password, password2)
+        email_error = self.getEmailError(email)
+
+        if username_error:
+            error_list.insert(0, username_error)
+            error_list.pop(1)
+        if pword_error:
+            error_list.insert(1, pword_error)
+            error_list.pop(2)
+        if email_error:
+            error_list.insert(2, email_error)
+            error_list.pop(3)
+        if error_list == ["", "", ""]:
+            return None
+        else:
+            return error_list
+
 
 
     def post(self):
@@ -111,16 +148,12 @@ class MainHandler(webapp2.RequestHandler):
         username = self.request.get("username")
         password = self.request.get("password")
         password2 = self.request.get("password2")
-
-
+        email = self.request.get("email")
         #TODO:
         #write valdiation function that returns list of error messages for write_form():
-        #error_list = validate(username, password, password2, email)
-        #if error_list:
-        #    content = self.write_form(error_list)
-        #else:
-        #    redirect to success page
-        error_list = self.validate(username, password, password2)
+        #error_list = error_gen(username, password, password2, email)
+
+        error_list = self.error_gen(username, password, password2, email)
 
         if error_list:
             content = self.write_form(*error_list)
@@ -128,8 +161,6 @@ class MainHandler(webapp2.RequestHandler):
         else:
             content = "Woohoo! That worked!"
             self.response.write(content)
-
-
 
 
 app = webapp2.WSGIApplication([
