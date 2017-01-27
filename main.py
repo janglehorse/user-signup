@@ -21,43 +21,72 @@ import re
 
 class MainHandler(webapp2.RequestHandler):
 
-    def write_form(self, username_error="", pword_error="", verify_error="", email_error=""):
+    def write_form(self, username_error="", pword_error="", verify_error="", email_error="",
+                   username="", email=""):
 
-        header = "<h1>User Signup</h1>"
-
+        header = "<h1>Signup</h1>"
+    #TODO:
+    #
+    #implement username=username, username_error=error, etc in .format tuple
+    #
         form = """
+        <title>Signup</title>
+
         <form action="/" method="post">
-            <lable>
-            Username:
-            </lable>
-            <br>
-            <input type="text" name="username"/>
-            <div style="color: red">{}</div>
-            <br>
-            <lable>
-            Password:
-            </lable>
-            <br>
-            <input type="text" name="password"/>
-            <div style="color: red">{}</div>
-            <br>
-            <lable>
-            Verify Password:
-            </label>
-            <br>
-            <input type="text" name="password2"/>
-            <div style="color: red">{}</div>
-            <br>
-            <lable>
-            *Email:
-            </lable>
-            <br>
-            <input type="text" name="email">
-            <div style="color: red">{}</div>
-            <br>
-            <input type="submit" value="submit">
+            <table>
+                <tbody>
+                    <tr>
+                        <td class="lable" style="text-align: right">
+                        Username
+                        </td>
+                            <td>
+                            <input type="text" name="username" value="{username}"/>
+                        </td>
+                        <td class="error" style="color: red">
+                        {username_error}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="lable" style="text-align: right">
+                        Password
+                        </td>
+                            <td>
+                                <input type="password" name="password"/>
+                        </td>
+                        <td class="error" style="color: red">
+                        {pword_error}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label" style="text-align: right">
+                        Verify Password
+                        </td>
+                            <td>
+                                <input type="password" name="password2"/>
+                        </td>
+                        <td class="error" style="color: red">
+                        {verify_error}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label" style="text-align: right">
+                        Email (optional)
+                        </td>
+                            <td>
+                                <input type="text" name="email" value="{email}"/>
+                        </td>
+                        <td class="error" style="color: red">
+                        {email_error}
+                        </td>
+                    </tr>
+                </tbody>
+        </table>
+        <input type="submit" value="submit">
         </form>
-        """.format(username_error, pword_error, verify_error, email_error)
+        """.format(
+                username=username, username_error=username_error,
+                pword_error=pword_error, verify_error=verify_error,
+                email_error=email_error, email=email)
 
         return header + form
 
@@ -109,7 +138,7 @@ class MainHandler(webapp2.RequestHandler):
         if password2:
             if not self.valid_password(password2):
                 pword_error = "Verification is not valid"
-            if password == password2:
+            if not password == password2:
                     pword_error = "Passwords do not match"
             if self.valid_password(password) and password == password2:
                 pword_error = None
@@ -132,7 +161,9 @@ class MainHandler(webapp2.RequestHandler):
         return email_error
 
     def error_gen(self, username, password, password2, email=""):
-        error_list = ["", "", "", ""]
+        #TODO:
+        #incorporate dictionary (per Brian's advice)
+        error_dict = {}
 
         username_error = self.getUsernameError(username)
         pword_error = self.getPasswordError(password)
@@ -140,23 +171,20 @@ class MainHandler(webapp2.RequestHandler):
         email_error = self.getEmailError(email)
 
         if username_error:
-            error_list.insert(0, username_error)
-            error_list.pop(1)
+            error_dict['username_error'] = username_error
         if pword_error:
-            error_list.insert(1, pword_error)
-            error_list.pop(2)
+            error_dict['pword_error'] = pword_error
         if verify_error:
-            error_list.insert(2, verify_error)
-            error_list.pop(3)
+            error_dict['verify_error'] = verify_error
         if email_error:
-            error_list.insert(3, email_error)
-            error_list.pop(4)
-        if error_list == ["", "", "", ""]:
+            error_dict['email_error'] = email_error
+        if not error_dict:
             return None
         else:
-            return error_list
+            error_dict['username'] = username
+            error_dict['email'] = email
 
-
+            return error_dict
 
     def post(self):
 
@@ -167,17 +195,25 @@ class MainHandler(webapp2.RequestHandler):
         #TODO:
         #write valdiation function that returns list of error messages for write_form():
         #error_list = error_gen(username, password, password2, email)
-
-        error_list = self.error_gen(username, password, password2, email)
-
-        if error_list:
-            content = self.write_form(*error_list)
+        #TODO:
+        #implement error_dict
+        error_dict = self.error_gen(username, password, password2, email)
+        #**dict unpackages dictionary
+        if error_dict:
+            content = self.write_form(**error_dict)
             self.response.write(content)
         else:
-            content = "Woohoo! That worked!"
-            self.response.write(content)
+
+            self.redirect('/thanks?username={username}'.format(username=username))
+
+class SuccessHandler(webapp2.RequestHandler):
+
+    def get(self):
+        username = self.request.get("username")
+        self.response.write("Welcome, {}!".format(username))
 
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', MainHandler),
+    ('/thanks', SuccessHandler)
 ], debug=True)
